@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieBot AI - Générateur de Films AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js pour la scène 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        movieYellow: '#FFD000',
+                        movieDark: '#0D0D0D',
+                        movieCard: '#1A1A1E',
+                        movieInput: '#26262B',
+                        movieBorder: '#333338'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d0d0d;
+            color: #ffffff;
+            user-select: none;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333338;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFD000;
+        }
+        .yellow-glow {
+            box-shadow: 0 0 15px rgba(255, 208, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-movieDark text-white h-screen flex flex-col justify-between overflow-hidden">
+
+    <!-- Top Header -->
+    <header class="px-6 py-4 flex items-center justify-between border-b border-movieBorder bg-movieDark z-20">
+        <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            moviebot <span class="bg-movieYellow text-black text-xs font-bold px-2 py-0.5 rounded-full uppercase">AI Studio</span>
+        </h1>
+        <div class="flex items-center gap-3">
+            <button id="apiKeyBtn" onclick="toggleApiKeyModal()" class="text-xs bg-movieCard hover:bg-movieInput text-gray-300 border border-movieBorder px-3 py-1.5 rounded-lg flex items-center gap-2 transition">
+                <i class="fa-solid font-mono fa-key text-movieYellow"></i> API Key Gemini
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="flex-1 overflow-y-auto relative pb-24">
+
+        <!-- SECTION 1: GENERATE (Direct Replica of UI Screenshots) -->
+        <section id="tab-generate" class="max-w-xl mx-auto px-4 py-6 space-y-6">
+
+            <!-- Story Topic Box -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold flex items-center gap-2 text-base">
+                        <i class="fa-regular fa-file-lines text-movieYellow"></i> Story Topic
+                    </span>
+                    <button onclick="clearTopic()" class="text-gray-400 hover:text-white text-xs">Clear All</button>
+                </div>
+                <div class="relative">
+                    <textarea id="storyPrompt" rows="3" maxlength="500" 
+                        class="w-full bg-movieInput border border-movieBorder rounded-2xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-movieYellow resize-none transition"
+                        placeholder='"My cat is made of ice cream."'></textarea>
+                    <button onclick="clearTopic()" class="absolute top-3 right-3 text-gray-400 hover:text-white bg-gray-700/50 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="text-right text-xs text-gray-500 mt-1 font-mono">
+                        <span id="charCount">0</span>/500
+                    </div>
+                </div>
+                <button onclick="surpriseMe()" class="border border-movieYellow/60 text-movieYellow hover:bg-movieYellow/10 text-xs font-semibold px-4 py-1.5 rounded-full transition">
+                    Surprise Me
+                </button>
+            </div>
+
+            <!-- Accordion items -->
+            <div class="space-y-3">
+
+                <!-- Characters Accordion -->
+                <div class="border-b border-movieBorder pb-3">
+                    <button onclick="toggleAccordion('acc-characters')" class="w-full flex justify-between items-center py-2 text-left hover:text-movieYellow transition">
+                        <span class="font-bold text-lg flex items-center gap-3">
+                            <i class="fa-solid fa-child-reaching text-gray-300"></i> Characters (Up to 4)
+                        </span>
+                        <i id="acc-characters-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    
+                    <div id="acc-characters" class="hidden pt-3 space-y-4">
+                        <!-- Active Scene Character Count Selector -->
+                        <div class="flex items-center justify-between bg-movieInput p-2.5 rounded-xl border border-movieBorder">
+                            <span class="text-xs font-semibold text-gray-300">Characters in Scene:</span>
+                            <div class="flex gap-1">
+                                <button onclick="setCharCount(2)" id="btn-count-2" class="px-3 py-1 text-xs rounded-lg font-bold bg-movieYellow text-black">2</button>
+                                <button onclick="setCharCount(3)" id="btn-count-3" class="px-3 py-1 text-xs rounded-lg font-bold bg-movieCard text-gray-400 hover:text-white">3</button>
+                                <button onclick="setCharCount(4)" id="btn-count-4" class="px-3 py-1 text-xs rounded-lg font-bold bg-movieCard text-gray-400 hover:text-white">4</button>
+                            </div>
+                        </div>
+
+                        <!-- Character selector tabs -->
+                        <div id="charTabContainer" class="grid grid-cols-4 gap-1.5">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <!-- Character Grid -->
+                        <div id="characterGrid" class="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto p-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voices Accordion -->
+                <div class="border-b border-movieBorder pb-3">
+                    <button onclick="toggleAccordion('acc-voices')" class="w-full flex justify-between items-center py-2 text-left hover:text-movieYellow transition">
+                        <span class="font-bold text-lg flex items-center gap-3">
+                            <i class="fa-solid fa-comment-dots text-gray-300"></i> Voices
+                        </span>
+                        <i id="acc-voices-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    
+                    <div id="acc-voices" class="hidden pt-3 space-y-4">
+                        <div id="voiceTabContainer" class="grid grid-cols-2 gap-1.5">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <!-- Voice List -->
+                        <div id="voiceGrid" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Objects / Items Accordion (NEW) -->
+                <div class="border-b border-movieBorder pb-3">
+                    <button onclick="toggleAccordion('acc-items')" class="w-full flex justify-between items-center py-2 text-left hover:text-movieYellow transition">
+                        <span class="font-bold text-lg flex items-center gap-3">
+                            <i class="fa-solid fa-cube text-gray-300"></i> Held Emoji Objects
+                        </span>
+                        <i id="acc-items-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    
+                    <div id="acc-items" class="hidden pt-3 space-y-3">
+                        <div id="itemTabContainer" class="grid grid-cols-4 gap-1.5">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div id="itemEmojiGrid" class="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto p-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Worlds Accordion -->
+                <div class="border-b border-movieBorder pb-3">
+                    <button onclick="toggleAccordion('acc-worlds')" class="w-full flex justify-between items-center py-2 text-left hover:text-movieYellow transition">
+                        <span class="font-bold text-lg flex items-center gap-3">
+                            <i class="fa-solid fa-earth-americas text-gray-300"></i> Worlds
+                        </span>
+                        <i id="acc-worlds-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    
+                    <div id="acc-worlds" class="hidden pt-3 space-y-4">
+                        <div class="flex gap-2 text-xs font-semibold">
+                            <button class="bg-movieYellow text-black px-3 py-1 rounded-full">3D Worlds</button>
+                            <button class="bg-movieInput text-gray-400 px-3 py-1 rounded-full">My Worlds</button>
+                        </div>
+
+                        <div id="worldGrid" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style Accordion -->
+                <div class="border-b border-movieBorder pb-3">
+                    <button onclick="toggleAccordion('acc-style')" class="w-full flex justify-between items-center py-2 text-left hover:text-movieYellow transition">
+                        <span class="font-bold text-lg flex items-center gap-3">
+                            <i class="fa-solid fa-paint-brush text-gray-300"></i> Style
+                        </span>
+                        <i id="acc-style-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    
+                    <div id="acc-style" class="hidden pt-3">
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setStyle('Cinematic')" class="style-btn border border-movieYellow bg-movieYellow/10 text-movieYellow py-2 rounded-xl text-xs font-semibold">Cinematic 3D</button>
+                            <button onclick="setStyle('Anime')" class="style-btn border border-movieBorder bg-movieInput text-gray-300 py-2 rounded-xl text-xs font-semibold">Toon / Anime</button>
+                            <button onclick="setStyle('Claymation')" class="style-btn border border-movieBorder bg-movieInput text-gray-300 py-2 rounded-xl text-xs font-semibold">Claymation</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Generate Action Button -->
+            <div class="pt-4">
+                <button onclick="generateMovie()" class="w-full bg-movieYellow hover:bg-yellow-400 text-black font-extrabold text-lg py-4 rounded-2xl shadow-lg transform active:scale-95 transition flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> I'm Feeling Lucky & Generate
+                </button>
+            </div>
+
+        </section>
+
+        <!-- SECTION 2: CREATE MODE (Replica of 2nd screenshot) -->
+        <section id="tab-create" class="max-w-xl mx-auto px-4 py-8 hidden space-y-4">
+            <h2 class="text-xl font-bold mb-4">Choose Creation Mode</h2>
+
+            <div onclick="selectCreateMode('ai')" class="bg-[#3A3300]/40 border border-movieYellow/50 hover:border-movieYellow p-6 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition text-center group">
+                <div class="bg-movieYellow/20 p-4 rounded-2xl text-movieYellow text-3xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <span class="font-bold text-lg text-movieYellow">Generate with AI</span>
+                <p class="text-xs text-gray-400">Write a simple prompt and let AI create the script, voices and 3D scenes.</p>
+            </div>
+
+            <div onclick="selectCreateMode('template')" class="bg-[#2D163D]/40 border border-purple-500/50 hover:border-purple-400 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition text-center group">
+                <div class="bg-purple-500/20 p-4 rounded-2xl text-purple-400 text-3xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-film"></i>
+                </div>
+                <span class="font-bold text-lg text-purple-300">Use a Template</span>
+                <p class="text-xs text-gray-400">Start with viral pre-made meme scripts, podcast setups or funny jokes.</p>
+            </div>
+
+            <div onclick="selectCreateMode('scratch')" class="bg-[#002B33]/40 border border-cyan-500/50 hover:border-cyan-400 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition text-center group">
+                <div class="bg-cyan-500/20 p-4 rounded-2xl text-cyan-400 text-3xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-circle-plus"></i>
+                </div>
+                <span class="font-bold text-lg text-cyan-300">From Scratch</span>
+                <p class="text-xs text-gray-400">Write dialogue manually line-by-line and select custom voices.</p>
+            </div>
+
+            <div onclick="selectCreateMode('character')" class="bg-[#0C3314]/40 border border-green-500/50 hover:border-green-400 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition text-center group">
+                <div class="bg-green-500/20 p-4 rounded-2xl text-green-400 text-3xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-child"></i>
+                </div>
+                <span class="font-bold text-lg text-green-300">Character Creator</span>
+                <p class="text-xs text-gray-400">Design custom 3D avatars with custom colors and voice profiles.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 3: MORE / SETTINGS -->
+        <section id="tab-more" class="max-w-xl mx-auto px-4 py-8 hidden space-y-4">
+            <h2 class="text-xl font-bold mb-4">Settings & Options</h2>
+            <div class="bg-movieCard border border-movieBorder rounded-2xl p-4 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold text-sm">Gemini AI Model</div>
+                        <div class="text-xs text-gray-400">Used for story writing & realistic TTS</div>
+                    </div>
+                    <span class="text-xs font-mono bg-movieInput px-3 py-1 rounded-full text-movieYellow">gemini-3-flash</span>
+                </div>
+                <hr class="border-movieBorder">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold text-sm">Audio Engine</div>
+                        <div class="text-xs text-gray-400">Google TTS realistic PCM voices</div>
+                    </div>
+                    <span class="text-xs font-mono bg-green-900/50 text-green-400 px-3 py-1 rounded-full">24kHz PCM</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: MOVIE PLAYER / STUDIO DISPLAY -->
+        <section id="movie-player-screen" class="hidden fixed inset-0 z-50 bg-black flex flex-col">
+            <!-- Top Controls -->
+            <div class="p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-20">
+                <button onclick="closeMoviePlayer()" class="bg-movieCard/80 hover:bg-movieCard text-white w-10 h-10 rounded-full flex items-center justify-center border border-movieBorder">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="text-center">
+                    <div id="playerTitle" class="font-bold text-sm">Movie Generation</div>
+                    <div id="playerStatus" class="text-xs text-movieYellow font-mono">Writing Script...</div>
+                </div>
+                <button id="downloadBtn" onclick="downloadAudio()" class="hidden bg-movieYellow text-black font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> Audio
+                </button>
+            </div>
+
+            <!-- 3D Canvas Container -->
+            <div id="canvas3d-container" class="flex-1 w-full h-full relative">
+                <canvas id="movieCanvas" class="w-full h-full"></canvas>
+
+                <!-- Loading overlay -->
+                <div id="renderingOverlay" class="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10">
+                    <div class="w-16 h-16 border-4 border-movieYellow border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <h3 id="renderStepText" class="text-lg font-bold text-movieYellow">Generating Script with Gemini...</h3>
+                    <p id="renderSubText" class="text-xs text-gray-400 mt-2 max-w-xs">MovieBot is crafting dialogue and synthesizing realistic actor voices...</p>
+                </div>
+
+                <!-- Subtitles overlay -->
+                <div id="subtitleContainer" class="hidden absolute bottom-16 left-6 right-6 text-center z-20 pointer-events-none">
+                    <div id="subtitleSpeaker" class="inline-block px-3 py-1 bg-movieYellow text-black font-extrabold text-xs rounded-t-lg shadow-md uppercase">
+                        Character
+                    </div>
+                    <div id="subtitleText" class="bg-black/80 backdrop-blur border border-white/10 text-white font-medium text-sm md:text-base p-4 rounded-b-2xl shadow-xl max-w-lg mx-auto">
+                        Dialogue lines...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Playback Control Bar -->
+            <div class="p-4 bg-movieCard border-t border-movieBorder flex items-center gap-4 z-20">
+                <button id="playPauseBtn" onclick="togglePlayPause()" class="w-12 h-12 bg-movieYellow text-black rounded-full flex items-center justify-center font-bold text-lg hover:scale-105 transition">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+                <div class="flex-1 space-y-1">
+                    <div class="flex justify-between text-xs text-gray-400 font-mono">
+                        <span id="currentTimeText">00:00</span>
+                        <span id="totalTimeText">00:00</span>
+                    </div>
+                    <div class="w-full bg-movieInput h-2 rounded-full overflow-hidden">
+                        <div id="progressBar" class="bg-movieYellow h-full w-0 transition-all"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Exact match to screenshot) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-movieDark border-t border-movieBorder px-6 py-2 flex justify-around items-center z-30">
+        <button onclick="switchTab('generate')" id="nav-generate" class="flex flex-col items-center text-movieYellow gap-1">
+            <div class="w-10 h-10 rounded-xl bg-movieYellow/10 flex items-center justify-center">
+                <i class="fa-solid fa-robot text-lg"></i>
+            </div>
+            <span class="text-[11px] font-semibold">Generate</span>
+        </button>
+
+        <button onclick="switchTab('create')" id="nav-create" class="flex flex-col items-center text-gray-400 hover:text-white gap-1 transition">
+            <div class="w-10 h-10 rounded-xl bg-movieInput flex items-center justify-center">
+                <i class="fa-solid fa-plus text-lg"></i>
+            </div>
+            <span class="text-[11px] font-semibold">Create</span>
+        </button>
+
+        <button onclick="switchTab('more')" id="nav-more" class="flex flex-col items-center text-gray-400 hover:text-white gap-1 transition">
+            <div class="w-10 h-10 rounded-xl bg-movieInput flex items-center justify-center">
+                <i class="fa-solid fa-ellipsis text-lg"></i>
+            </div>
+            <span class="text-[11px] font-semibold">More</span>
+        </button>
+    </nav>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-movieCard border border-movieBorder p-6 rounded-2xl max-w-md w-full space-y-4">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-key text-movieYellow"></i> Configure Gemini API Key
+            </h3>
+            <p class="text-xs text-gray-400">
+                An API Key is needed for realistic voice synthesis (Puck, Kore, Fenrir, etc.) and AI script generation.
+            </p>
+            <input type="password" id="customApiKey" placeholder="AIzaSy..." 
+                class="w-full bg-movieInput border border-movieBorder rounded-xl p-3 text-sm text-white focus:outline-none focus:border-movieYellow">
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleApiKeyModal()" class="px-4 py-2 text-xs bg-movieInput hover:bg-gray-700 rounded-xl">Cancel</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 text-xs bg-movieYellow text-black font-bold rounded-xl">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- DATA & CONFIGS ---
+        const CHARACTERS = [
+            { id: 'noob', name: 'Noobini', color: 0x0000ff, headColor: 0xffff00, shape: 'noob' },
+            { id: 'bacon', name: 'Bacon n eggs', color: 0xd97706, headColor: 0xf59e0b, shape: 'bacon' },
+            { id: 'steve', name: 'Steven', color: 0x008080, headColor: 0x8d5524, shape: 'steve' },
+            { id: 'mario', name: 'Maro', color: 0xff0000, headColor: 0x0000ff, shape: 'mario' },
+            { id: 'peach', name: 'Pech', color: 0xffc0cb, headColor: 0xffd700, shape: 'peach' },
+            { id: 'luigi', name: 'Larry', color: 0x008000, headColor: 0x0000ff, shape: 'mario' },
+            { id: 'gumball', name: 'Bubble Gum', color: 0x00bfff, headColor: 0x00bfff, shape: 'gumball' },
+            { id: 'baldi', name: 'Baldi', color: 0x008000, headColor: 0xffe0bd, shape: 'baldi' },
+            { id: 'kirby', name: 'Kirbo', color: 0xff69b4, headColor: 0xff69b4, shape: 'kirby' },
+            { id: 'ribbon', name: 'Ribbon cable', color: 0x888888, headColor: 0xaaaaaa, shape: 'default' },
+            { id: 'sonic', name: 'Son', color: 0x0000ff, headColor: 0x0000ff, shape: 'default' },
+            { id: 'coraline', name: 'Carole', color: 0x000080, headColor: 0xffe0bd, shape: 'default' },
+            { id: 'watermelon', name: 'Watermelon', color: 0x2e7d32, headColor: 0xd32f2f, shape: 'watermelon' },
+            { id: 'apple', name: 'Apple', color: 0xd32f2f, headColor: 0x388e3c, shape: 'default' },
+            { id: 'mii', name: 'Miiiii', color: 0x9e9e9e, headColor: 0xffe0bd, shape: 'default' },
+            { id: 'random', name: 'Random', isRandom: true }
+        ];
+
+        const EMOJI_ITEMS = ["None", "🍕", "🍔", "🍦", "🎸", "🗡️", "🪄", "🎮", "📱", "🏆", "💣", "☕", "🍌", "🚀", "💡"];
+
+        // Realistic TTS Voices supported by Gemini TTS
+        const VOICES = [
+            { id: 'Puck', name: 'Puck', desc: 'Upbeat & Energetic' },
+            { id: 'Kore', name: 'Kore', desc: 'Firm & Clear' },
+            { id: 'Zephyr', name: 'Zephyr', desc: 'Bright & Friendly' },
+            { id: 'Fenrir', name: 'Fenrir', desc: 'Deep & Excitable' },
+            { id: 'Aoede', name: 'Aoede', desc: 'Breezy & Natural' },
+            { id: 'Charon', name: 'Charon', desc: 'Informative' },
+            { id: 'Leda', name: 'Leda', desc: 'Youthful' },
+            { id: 'Orus', name: 'Orus', desc: 'Firm & Deep' }
+        ];
+
+        const WORLDS = [
+            { id: 'bedroom', name: 'Bedroom', color: 0x3e2723 },
+            { id: 'city', name: 'City Street', color: 0x424242 },
+            { id: 'desert', name: 'Desert Canyon', color: 0xd84315 },
+            { id: 'maro', name: 'Maro World', color: 0x2e7d32 },
+            { id: 'classroom', name: 'Classroom', color: 0x1565c0 },
+            { id: 'neutral', name: 'Neutral Light', color: 0x9e9e9e }
+        ];
+
+        const SURPRISE_PROMPTS = [
+            "My cat is secretly an interstellar conqueror.",
+            "Four pizza slice lovers argue over the best topping.",
+            "A detective interviewing three suspicious potatoes.",
+            "When all four shadows start talking back to you simultaneously!"
+        ];
+
+        // --- APP STATE ---
+        let selectedPrompt = "";
+        let maxSceneChars = 2; // Supports 2, 3, or 4
+        let selectedChars = [CHARACTERS[0], CHARACTERS[1], CHARACTERS[2], CHARACTERS[3]];
+        let selectedVoices = [VOICES[0], VOICES[1], VOICES[2], VOICES[3]];
+        let selectedItems = ["🍕", "None", "🎸", "None"];
+
+        let activeCharSelect = 0;
+        let activeVoiceSelect = 0;
+        let activeItemSelect = 0;
+
+        let selectedWorld = WORLDS[0];
+        let selectedStyle = 'Cinematic';
+
+        let userApiKey = localStorage.getItem('gemini_api_key') || "";
+
+        // Three.js Scene Variables
+        let scene, camera, renderer, light;
+        let charMeshes = [];
+        let animationFrameId;
+        let isPlaying = false;
+        let dialogueQueue = [];
+        let currentDialogueIndex = 0;
+        let audioPlayer = new Audio();
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            initUI();
+            setupPromptCounter();
+        };
+
+        function initUI() {
+            renderTabs();
+            renderCharacterGrid();
+            renderVoiceGrid();
+            renderItemGrid();
+            renderWorldGrid();
+        }
+
+        function setCharCount(count) {
+            maxSceneChars = count;
+            [2, 3, 4].forEach(c => {
+                const btn = document.getElementById(`btn-count-${c}`);
+                if (c === count) {
+                    btn.className = "px-3 py-1 text-xs rounded-lg font-bold bg-movieYellow text-black";
+                } else {
+                    btn.className = "px-3 py-1 text-xs rounded-lg font-bold bg-movieCard text-gray-400 hover:text-white";
+                }
+            });
+
+            if (activeCharSelect >= maxSceneChars) activeCharSelect = 0;
+            if (activeVoiceSelect >= maxSceneChars) activeVoiceSelect = 0;
+            if (activeItemSelect >= maxSceneChars) activeItemSelect = 0;
+
+            renderTabs();
+            renderCharacterGrid();
+            renderVoiceGrid();
+            renderItemGrid();
+        }
+
+        function renderTabs() {
+            // Character selection tabs
+            const charTabContainer = document.getElementById('charTabContainer');
+            charTabContainer.innerHTML = '';
+            for (let i = 0; i < maxSceneChars; i++) {
+                const isSelected = activeCharSelect === i;
+                charTabContainer.innerHTML += `
+                    <button onclick="switchCharTab(${i})" class="py-1.5 px-2 rounded-xl border ${isSelected ? 'border-movieYellow bg-movieYellow/10 text-movieYellow font-bold' : 'border-movieBorder bg-movieInput text-gray-400'} text-xs flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-user"></i> C${i + 1}
+                    </button>`;
+            }
+
+            // Voice selection tabs
+            const voiceTabContainer = document.getElementById('voiceTabContainer');
+            voiceTabContainer.className = `grid grid-cols-${maxSceneChars} gap-1.5`;
+            voiceTabContainer.innerHTML = '';
+            for (let i = 0; i < maxSceneChars; i++) {
+                const isSelected = activeVoiceSelect === i;
+                voiceTabContainer.innerHTML += `
+                    <button onclick="switchVoiceCharTab(${i})" class="py-1.5 px-2 rounded-xl border ${isSelected ? 'border-movieYellow bg-movieYellow/10 text-movieYellow font-bold' : 'border-movieBorder bg-movieInput text-gray-400'} text-xs">
+                        Voice C${i + 1}
+                    </button>`;
+            }
+
+            // Item selection tabs
+            const itemTabContainer = document.getElementById('itemTabContainer');
+            itemTabContainer.className = `grid grid-cols-${maxSceneChars} gap-1.5`;
+            itemTabContainer.innerHTML = '';
+            for (let i = 0; i < maxSceneChars; i++) {
+                const isSelected = activeItemSelect === i;
+                itemTabContainer.innerHTML += `
+                    <button onclick="switchItemTab(${i})" class="py-1.5 px-2 rounded-xl border ${isSelected ? 'border-movieYellow bg-movieYellow/10 text-movieYellow font-bold' : 'border-movieBorder bg-movieInput text-gray-400'} text-xs">
+                        Item C${i + 1}
+                    </button>`;
+            }
+        }
+
+        function setupPromptCounter() {
+            const area = document.getElementById('storyPrompt');
+            const count = document.getElementById('charCount');
+            area.addEventListener('input', () => {
+                count.innerText = area.value.length;
+            });
+        }
+
+        // --- UI NAVIGATION & ACCORDIONS ---
+        function switchTab(tab) {
+            document.getElementById('tab-generate').classList.add('hidden');
+            document.getElementById('tab-create').classList.add('hidden');
+            document.getElementById('tab-more').classList.add('hidden');
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+            ['generate', 'create', 'more'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    btn.className = "flex flex-col items-center text-movieYellow gap-1";
+                    btn.querySelector('div').className = "w-10 h-10 rounded-xl bg-movieYellow/10 flex items-center justify-center";
+                } else {
+                    btn.className = "flex flex-col items-center text-gray-400 hover:text-white gap-1 transition";
+                    btn.querySelector('div').className = "w-10 h-10 rounded-xl bg-movieInput flex items-center justify-center";
+                }
+            });
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById(`${id}-icon`);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function clearTopic() {
+            document.getElementById('storyPrompt').value = '';
+            document.getElementById('charCount').innerText = '0';
+        }
+
+        function surpriseMe() {
+            const rand = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+            const el = document.getElementById('storyPrompt');
+            el.value = rand;
+            document.getElementById('charCount').innerText = rand.length;
+        }
+
+        // --- CHARACTER SELECTION ---
+        function switchCharTab(idx) {
+            activeCharSelect = idx;
+            renderTabs();
+            renderCharacterGrid();
+        }
+
+        function renderCharacterGrid() {
+            const container = document.getElementById('characterGrid');
+            const activeChar = selectedChars[activeCharSelect];
+
+            container.innerHTML = CHARACTERS.map(c => {
+                const isSelected = activeChar.id === c.id;
+                if (c.isRandom) {
+                    return `
+                    <button onclick="selectCharacter('random')" class="border ${isSelected ? 'border-movieYellow' : 'border-movieBorder'} bg-movieCard p-3 rounded-xl flex flex-col items-center justify-center hover:border-movieYellow transition">
+                        <i class="fa-solid fa-shuffle text-2xl text-movieYellow mb-1"></i>
+                        <span class="text-[10px] font-bold">Random</span>
+                    </button>`;
+                }
+                return `
+                <button onclick="selectCharacter('${c.id}')" class="border ${isSelected ? 'border-movieYellow bg-movieYellow/10' : 'border-movieBorder bg-movieCard'} p-2 rounded-xl flex flex-col items-center hover:border-movieYellow transition">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center mb-1 text-white shadow-md" style="background-color: #${c.color.toString(16)}">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <span class="text-[10px] font-bold truncate w-full text-center">${c.name}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectCharacter(id) {
+            let char = CHARACTERS.find(c => c.id === id);
+            if (id === 'random') {
+                const nonRandom = CHARACTERS.filter(c => !c.isRandom);
+                char = nonRandom[Math.floor(Math.random() * nonRandom.length)];
+            }
+            selectedChars[activeCharSelect] = char;
+            renderCharacterGrid();
+        }
+
+        // --- VOICE SELECTION ---
+        function switchVoiceCharTab(idx) {
+            activeVoiceSelect = idx;
+            renderTabs();
+            renderVoiceGrid();
+        }
+
+        function renderVoiceGrid() {
+            const container = document.getElementById('voiceGrid');
+            const activeVoice = selectedVoices[activeVoiceSelect];
+
+            container.innerHTML = VOICES.map(v => {
+                const isSelected = activeVoice.id === v.id;
+                return `
+                <button onclick="selectVoice('${v.id}')" class="border ${isSelected ? 'border-movieYellow bg-movieYellow/10' : 'border-movieBorder bg-movieCard'} p-2 rounded-xl flex flex-col items-start hover:border-movieYellow transition">
+                    <div class="flex items-center gap-1.5 text-xs font-bold ${isSelected ? 'text-movieYellow' : 'text-white'}">
+                        <i class="fa-solid fa-microphone"></i> ${v.name}
+                    </div>
+                    <span class="text-[9px] text-gray-400 truncate w-full text-left">${v.desc}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectVoice(id) {
+            const voice = VOICES.find(v => v.id === id);
+            selectedVoices[activeVoiceSelect] = voice;
+            renderVoiceGrid();
+        }
+
+        // --- HELD ITEMS SELECTION ---
+        function switchItemTab(idx) {
+            activeItemSelect = idx;
+            renderTabs();
+            renderItemGrid();
+        }
+
+        function renderItemGrid() {
+            const container = document.getElementById('itemEmojiGrid');
+            const currentItem = selectedItems[activeItemSelect];
+
+            container.innerHTML = EMOJI_ITEMS.map(item => {
+                const isSelected = currentItem === item;
+                return `
+                <button onclick="selectItem('${item}')" class="border ${isSelected ? 'border-movieYellow bg-movieYellow/10' : 'border-movieBorder bg-movieCard'} p-2 rounded-xl flex flex-col items-center justify-center hover:border-movieYellow transition text-xl">
+                    <span>${item}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectItem(item) {
+            selectedItems[activeItemSelect] = item;
+            renderItemGrid();
+        }
+
+        // --- WORLD SELECTION ---
+        function renderWorldGrid() {
+            const container = document.getElementById('worldGrid');
+            container.innerHTML = WORLDS.map(w => {
+                const isSelected = selectedWorld.id === w.id;
+                return `
+                <button onclick="selectWorld('${w.id}')" class="border ${isSelected ? 'border-movieYellow bg-movieYellow/10' : 'border-movieBorder bg-movieCard'} p-2 rounded-xl flex flex-col items-center hover:border-movieYellow transition">
+                    <div class="w-full h-12 rounded-lg mb-1 flex items-center justify-center text-white" style="background-color: #${w.color.toString(16)}">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <span class="text-[10px] font-bold">${w.name}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectWorld(id) {
+            selectedWorld = WORLDS.find(w => w.id === id);
+            renderWorldGrid();
+        }
+
+        function setStyle(s) {
+            selectedStyle = s;
+            document.querySelectorAll('.style-btn').forEach(btn => {
+                if (btn.innerText.includes(s)) {
+                    btn.className = "style-btn border border-movieYellow bg-movieYellow/10 text-movieYellow py-2 rounded-xl text-xs font-semibold";
+                } else {
+                    btn.className = "style-btn border border-movieBorder bg-movieInput text-gray-300 py-2 rounded-xl text-xs font-semibold";
+                }
+            });
+        }
+
+        // --- API KEY CONFIG ---
+        function toggleApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('customApiKey').value.trim();
+            userApiKey = val;
+            localStorage.setItem('gemini_api_key', val);
+            toggleApiKeyModal();
+        }
+
+        function selectCreateMode(mode) {
+            switchTab('generate');
+            if (mode === 'ai') {
+                surpriseMe();
+            }
+        }
+
+        // --- GENERATION ENGINE (GEMINI API INTEGRATION) ---
+        async function generateMovie() {
+            const promptInput = document.getElementById('storyPrompt').value.trim();
+            const topic = promptInput || "My cat is made of ice cream.";
+
+            // Show Movie Player modal
+            document.getElementById('movie-player-screen').classList.remove('hidden');
+            document.getElementById('renderingOverlay').classList.remove('hidden');
+            document.getElementById('renderStepText').innerText = "Writing Script with Gemini AI...";
+            document.getElementById('renderSubText').innerText = `Topic: "${topic}" (${maxSceneChars} Characters)`;
+
+            // Initialize Three.js Scene
+            init3DScene();
+
+            try {
+                // 1. Generate Script via Gemini Structured JSON
+                const script = await generateScriptWithAI(topic);
+                
+                document.getElementById('renderStepText').innerText = "Synthesizing Realistic Audio Voices...";
+                document.getElementById('renderSubText').innerText = `Using ${maxSceneChars} unique character voices & actions`;
+
+                // 2. Synthesize Audio for each dialogue line using TTS API
+                dialogueQueue = [];
+                for (let i = 0; i < script.length; i++) {
+                    const line = script[i];
+                    const speakerIdx = (parseInt(line.speaker, 10) - 1) % maxSceneChars;
+                    const voice = selectedVoices[speakerIdx].id;
+                    const audioUrl = await generateTTSAudio(line.text, voice);
+                    
+                    dialogueQueue.push({
+                        speaker: selectedChars[speakerIdx].name,
+                        speakerNum: speakerIdx + 1,
+                        text: line.text,
+                        emotion: line.emotion || "happy", // happy, angry, surprised, sad
+                        movement: line.movement || "jump", // walk, jump, spin, wave
+                        audioUrl: audioUrl
+                    });
+                }
+
+                // Hide Loading Screen & Start Playing
+                document.getElementById('renderingOverlay').classList.add('hidden');
+                document.getElementById('subtitleContainer').classList.remove('hidden');
+                document.getElementById('playerStatus').innerText = "Playing Scene";
+
+                currentDialogueIndex = 0;
+                playDialogueIndex(0);
+
+            } catch (err) {
+                console.error("Generation error:", err);
+                // Fallback offline mock script if API fails
+                playFallbackDemoScript(topic);
+            }
+        }
+
+        // 1. AI Script Generator
+        async function generateScriptWithAI(topic) {
+            const apiKey = userApiKey || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `You are an AI screenwriter for short funny 3D animated videos (MovieBot) with ${maxSceneChars} characters in scene. 
+            Generate a short dynamic dialogue exchange (4-6 lines) between character numbers "1" to "${maxSceneChars}".
+            Include emotions ("happy", "angry", "surprised", "sad") and movement actions ("walk", "jump", "spin", "wave").
+            Output JSON strictly formatted as an array of objects: 
+            [{"speaker": "1", "text": "...", "emotion": "surprised", "movement": "jump"}, ...]`;
+
+            const payload = {
+                contents: [{ parts: [{ text: `Topic: ${topic}` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "speaker": { "type": "STRING", "description": `Speaker number from 1 to ${maxSceneChars}` },
+                                "text": { "type": "STRING" },
+                                "emotion": { "type": "STRING", "description": "happy, angry, surprised, or sad" },
+                                "movement": { "type": "STRING", "description": "walk, jump, spin, or wave" }
+                            },
+                            "propertyOrdering": ["speaker", "text", "emotion", "movement"]
+                        }
+                    }
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Script generation failed");
+            const data = await response.json();
+            const text = data.candidates[0].content.parts[0].text;
+            return JSON.parse(text);
+        }
+
+        // 2. Realistic Audio TTS Engine (PCM16 to WAV converter included)
+        async function generateTTSAudio(textPrompt, voiceName) {
+            const apiKey = userApiKey || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: textPrompt }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: voiceName }
+                        }
+                    }
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("TTS Audio request failed");
+            const result = await response.json();
+            const part = result?.candidates?.[0]?.content?.parts?.[0];
+            const base64Data = part?.inlineData?.data;
+            const mimeType = part?.inlineData?.mimeType || "audio/L16;rate=24000";
+
+            if (!base64Data) throw new Error("Invalid Audio response");
+
+            // Convert PCM Data to WAV Object URL
+            const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)?.[1] || "24000", 10);
+            const pcmArray = base64ToArrayBuffer(base64Data);
+            const pcm16 = new Int16Array(pcmArray);
+            const wavBlob = pcmToWav(pcm16, sampleRate);
+            return URL.createObjectURL(wavBlob);
+        }
+
+        // Helper functions for TTS audio binary conversion
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const numChannels = 1;
+            const bytesPerSample = 2;
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcm16.length * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            /* RIFF identifier */
+            writeString(view, 0, 'RIFF');
+            /* RIFF chunk length */
+            view.setUint32(4, 36 + dataSize, true);
+            /* RIFF type */
+            writeString(view, 8, 'WAVE');
+            /* format chunk identifier */
+            writeString(view, 12, 'fmt ');
+            /* format chunk length */
+            view.setUint32(16, 16, true);
+            /* sample format (raw) */
+            view.setUint16(20, 1, true);
+            /* channel count */
+            view.setUint16(22, numChannels, true);
+            /* sample rate */
+            view.setUint32(24, sampleRate, true);
+            /* byte rate (sample rate * block align) */
+            view.setUint32(28, byteRate, true);
+            /* block align (channel count * bytes per sample) */
+            view.setUint16(32, blockAlign, true);
+            /* bits per sample */
+            view.setUint16(34, 16, true);
+            /* data chunk identifier */
+            writeString(view, 36, 'data');
+            /* data chunk length */
+            view.setUint32(40, dataSize, true);
+
+            // Write PCM audio samples
+            for (let i = 0; i < pcm16.length; i++) {
+                view.setInt16(44 + i * 2, pcm16[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Fallback demo script if API Key isn't provided or fails
+        function playFallbackDemoScript(topic) {
+            document.getElementById('renderingOverlay').classList.add('hidden');
+            document.getElementById('subtitleContainer').classList.remove('hidden');
+
+            dialogueQueue = [];
+            const emotions = ["surprised", "angry", "happy", "sad"];
+            const movements = ["walk", "jump", "spin", "wave"];
+
+            for (let i = 0; i < Math.max(3, maxSceneChars); i++) {
+                const speakerIdx = i % maxSceneChars;
+                dialogueQueue.push({
+                    speaker: selectedChars[speakerIdx].name,
+                    speakerNum: speakerIdx + 1,
+                    text: `Hey! Talking about "${topic}" makes me feel ${emotions[i % emotions.length]}!`,
+                    emotion: emotions[i % emotions.length],
+                    movement: movements[i % movements.length],
+                    audioUrl: null
+                });
+            }
+
+            currentDialogueIndex = 0;
+            playDialogueIndex(0);
+        }
+
+        // --- PLAYBACK CONTROLLER ---
+        function playDialogueIndex(index) {
+            if (index >= dialogueQueue.length) {
+                isPlaying = false;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-rotate-right"></i>';
+                return;
+            }
+
+            const item = dialogueQueue[index];
+            document.getElementById('subtitleSpeaker').innerText = `${item.speaker} (${item.emotion})`;
+            document.getElementById('subtitleText').innerText = `"${item.text}"`;
+
+            // Animate 3D character speaking, moving & displaying emotion
+            animateCharacterAction(item.speakerNum - 1, item.emotion, item.movement);
+
+            if (item.audioUrl) {
+                audioPlayer.src = item.audioUrl;
+                audioPlayer.play();
+                audioPlayer.onended = () => {
+                    currentDialogueIndex++;
+                    playDialogueIndex(currentDialogueIndex);
+                };
+            } else {
+                // SpeechSynthesis Fallback if no audio URL generated
+                const utterance = new SpeechSynthesisUtterance(item.text);
+                window.speechSynthesis.speak(utterance);
+                utterance.onend = () => {
+                    currentDialogueIndex++;
+                    playDialogueIndex(currentDialogueIndex);
+                };
+            }
+            isPlaying = true;
+            document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
+            document.getElementById('progressBar').style.width = `${((index + 1) / dialogueQueue.length) * 100}%`;
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                window.speechSynthesis.pause();
+                isPlaying = false;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+            } else {
+                if (currentDialogueIndex >= dialogueQueue.length) currentDialogueIndex = 0;
+                playDialogueIndex(currentDialogueIndex);
+            }
+        }
+
+        function closeMoviePlayer() {
+            audioPlayer.pause();
+            window.speechSynthesis.cancel();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            document.getElementById('movie-player-screen').classList.add('hidden');
+        }
+
+        // --- THREE.JS 3D ENGINE ---
+        function init3DScene() {
+            const container = document.getElementById('canvas3d-container');
+            const canvas = document.getElementById('movieCanvas');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(selectedWorld.color);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 1.8, 5.5);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // Create Characters 3D Meshes (Up to 4)
+            charMeshes = [];
+            const spacing = 1.2;
+            const startX = -((maxSceneChars - 1) * spacing) / 2;
+
+            for (let i = 0; i < maxSceneChars; i++) {
+                const mesh = create3DPuppet(selectedChars[i], selectedItems[i]);
+                mesh.position.set(startX + i * spacing, 0, 0);
+                mesh.userData = {
+                    baseX: startX + i * spacing,
+                    baseY: 0,
+                    emotion: 'neutral'
+                };
+                scene.add(mesh);
+                charMeshes.push(mesh);
+            }
+
+            // Render loop
+            function render() {
+                animationFrameId = requestAnimationFrame(render);
+                const time = Date.now() * 0.003;
+
+                // Idle subtle breathing animation
+                charMeshes.forEach((mesh, idx) => {
+                    if (!mesh.userData.isAnimating) {
+                        mesh.position.y = mesh.userData.baseY + Math.sin(time + idx) * 0.04;
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            render();
+        }
+
+        // Helper to create Canvas Texture for Emoji Items
+        function createEmojiTexture(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '80px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Create stylized 3D avatar puppets with Emoji Handheld Objects
+        function create3DPuppet(charData, itemEmoji) {
+            const group = new THREE.Group();
+            const shapeType = charData.shape || 'default';
+            let headMesh, mouthMesh, eyesGroup = new THREE.Group();
+
+            if (shapeType === 'steve') {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), new THREE.MeshStandardMaterial({ color: charData.color, roughness: 0.8 }));
+                body.position.y = 0.55;
+                group.add(body);
+
+                headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: charData.headColor, roughness: 0.8 }));
+                headMesh.position.y = 1.15;
+                group.add(headMesh);
+
+                const eyeGeo = new THREE.BoxGeometry(0.1, 0.08, 0.02);
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+
+                [-0.15, 0.15].forEach(x => {
+                    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+                    eye.position.set(x, 1.18, 0.26);
+                    const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.03), pupilMat);
+                    pupil.position.set(x > 0 ? x + 0.02 : x - 0.02, 1.18, 0.27);
+                    eyesGroup.add(eye);
+                    eyesGroup.add(pupil);
+                });
+
+                mouthMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.02), new THREE.MeshBasicMaterial({ color: 0x3d2314 }));
+                mouthMesh.position.set(0, 1.02, 0.26);
+
+            } else if (shapeType === 'noob') {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.35), new THREE.MeshStandardMaterial({ color: charData.color }));
+                body.position.y = 0.525;
+                group.add(body);
+
+                headMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.5, 32), new THREE.MeshStandardMaterial({ color: charData.headColor }));
+                headMesh.position.y = 1.15;
+                group.add(headMesh);
+
+                const eyeGeo = new THREE.SphereGeometry(0.04, 16, 16);
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                [-0.1, 0.1].forEach(x => {
+                    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+                    eye.position.set(x, 1.18, 0.24);
+                    eyesGroup.add(eye);
+                });
+
+                mouthMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.02), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                mouthMesh.position.set(0, 1.08, 0.24);
+
+            } else if (shapeType === 'kirby') {
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 32), new THREE.MeshStandardMaterial({ color: charData.color }));
+                body.position.y = 0.6;
+                group.add(body);
+
+                const footGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                footGeo.scale(1.2, 0.6, 1.5);
+                const footMat = new THREE.MeshStandardMaterial({ color: 0xd32f2f });
+                [-0.3, 0.3].forEach(x => {
+                    const foot = new THREE.Mesh(footGeo, footMat);
+                    foot.position.set(x, 0.15, 0.1);
+                    group.add(foot);
+                });
+
+                const eyeGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                eyeGeo.scale(0.5, 1.8, 0.3);
+                [-0.12, 0.12].forEach(x => {
+                    const eye = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                    eye.position.set(x, 0.7, 0.52);
+                    eyesGroup.add(eye);
+                });
+
+                mouthMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({ color: 0x880000 }));
+                mouthMesh.position.set(0, 0.55, 0.52);
+
+            } else {
+                // Default Capsule
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.9, 16), new THREE.MeshStandardMaterial({ color: charData.color }));
+                body.position.y = 0.5;
+                group.add(body);
+
+                headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 32, 32), new THREE.MeshStandardMaterial({ color: charData.headColor }));
+                headMesh.position.y = 1.25;
+                group.add(headMesh);
+
+                const eyeGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                [-0.12, 0.12].forEach(x => {
+                    const eye = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                    eye.position.set(x, 1.3, 0.3);
+                    eyesGroup.add(eye);
+                });
+
+                mouthMesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.04, 0.05), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                mouthMesh.position.set(0, 1.15, 0.32);
+            }
+
+            mouthMesh.name = "mouth";
+            group.add(mouthMesh);
+            group.add(eyesGroup);
+
+            // Held Emoji Item
+            if (itemEmoji && itemEmoji !== "None") {
+                const texture = createEmojiTexture(itemEmoji);
+                const itemMat = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(itemMat);
+                sprite.scale.set(0.4, 0.4, 1);
+                sprite.position.set(0.4, 0.6, 0.3);
+                sprite.name = "heldItem";
+                group.add(sprite);
+            }
+
+            return group;
+        }
+
+        // --- ANIMATIONS, MOVEMENTS & EMOTIONS ---
+        function animateCharacterAction(charIdx, emotion, movement) {
+            const mesh = charMeshes[charIdx];
+            if (!mesh) return;
+
+            mesh.userData.isAnimating = true;
+            const mouth = mesh.getObjectByName("mouth");
+            const heldItem = mesh.getObjectByName("heldItem");
+            
+            // 1. Mouth Talking Effect
+            if (mouth) {
+                let count = 0;
+                const interval = setInterval(() => {
+                    mouth.scale.y = Math.random() * 3 + 1;
+                    count++;
+                    if (count > 15) {
+                        clearInterval(interval);
+                        mouth.scale.y = 1;
+                    }
+                }, 100);
+            }
+
+            // 2. Apply Emotions (Scale/Rotation Adjustments)
+            if (emotion === 'angry') {
+                mesh.rotation.z = 0.2;
+                mesh.scale.set(1.1, 0.9, 1.1);
+            } else if (emotion === 'surprised') {
+                mesh.rotation.z = -0.1;
+                mesh.scale.set(0.9, 1.2, 0.9);
+            } else if (emotion === 'sad') {
+                mesh.rotation.x = 0.2;
+                mesh.scale.set(0.95, 0.85, 0.95);
+            } else { // Happy / Default
+                mesh.rotation.set(0, 0, 0);
+                mesh.scale.set(1, 1, 1);
+            }
+
+            // 3. SPECIAL OBJECT INTERACTION LOGIC
+            const currentItem = selectedItems[charIdx];
+            
+            // Bomb Slay & Blast Flying Animation
+            if (currentItem === '💣' || movement === 'slay' || movement === 'bomb') {
+                let targetIdx = (charIdx + 1) % maxSceneChars;
+                let targetMesh = charMeshes[targetIdx];
+                
+                // Animate bomb item flashing/scaling
+                if (heldItem) {
+                    heldItem.scale.set(0.8, 0.8, 1);
+                }
+
+                setTimeout(() => {
+                    if (targetMesh) {
+                        targetMesh.userData.isAnimating = true;
+                        let startTime = Date.now();
+                        let duration = 1500;
+                        function launchFly() {
+                            let elapsed = Date.now() - startTime;
+                            let p = elapsed / duration;
+                            if (p < 0.5) {
+                                targetMesh.position.y = targetMesh.userData.baseY + (p * 2) * 8; // Launch high in sky!
+                                targetMesh.rotation.x += 0.3;
+                                targetMesh.rotation.z += 0.4;
+                            } else if (p <= 1) {
+                                targetMesh.position.y = targetMesh.userData.baseY + (1 - p) * 2 * 8; // Fall back
+                                targetMesh.rotation.x += 0.2;
+                            }
+                            if (p < 1) requestAnimationFrame(launchFly);
+                            else {
+                                targetMesh.position.set(targetMesh.userData.baseX, targetMesh.userData.baseY, 0);
+                                targetMesh.rotation.set(0, 0, 0);
+                                targetMesh.userData.isAnimating = false;
+                            }
+                        }
+                        launchFly();
+                    }
+                }, 400);
+            } 
+            // Sword Slash Slay Animation
+            else if (currentItem === '🗡️') {
+                if (heldItem) {
+                    let slashStart = Date.now();
+                    function slashAnim() {
+                        let p = (Date.now() - slashStart) / 600;
+                        if (p <= 1) {
+                            heldItem.rotation.z = -Math.sin(p * Math.PI) * 2;
+                            requestAnimationFrame(slashAnim);
+                        } else {
+                            heldItem.rotation.z = 0;
+                        }
+                    }
+                    slashAnim();
+                }
+            } 
+            // Phone Doomscroll / Call Interaction
+            else if (currentItem === '📱') {
+                if (heldItem) {
+                    heldItem.position.set(0.1, 1.1, 0.4); // Bring phone up to head
+                    mesh.rotation.x = 0.25; // Look down at phone
+                    let scrollStart = Date.now();
+                    function doomscroll() {
+                        let p = (Date.now() - scrollStart) / 1000;
+                        if (p <= 1) {
+                            heldItem.position.y = 1.1 + Math.sin(p * Math.PI * 10) * 0.02; // Tapping / scrolling effect
+                            requestAnimationFrame(doomscroll);
+                        } else {
+                            heldItem.position.set(0.4, 0.6, 0.3);
+                            mesh.rotation.x = 0;
+                        }
+                    }
+                    doomscroll();
+                }
+            }
+            // Food / Drink Eating Interaction
+            else if (['🍕', '🍔', '🍦', '☕', '🍌'].includes(currentItem)) {
+                if (heldItem) {
+                    heldItem.position.set(0, 1.0, 0.35); // Move food to mouth
+                    setTimeout(() => {
+                        mesh.scale.set(1.15, 0.9, 1.15); // Chew squish
+                        setTimeout(() => {
+                            mesh.scale.set(1, 1, 1);
+                            heldItem.position.set(0.4, 0.6, 0.3);
+                        }, 400);
+                    }, 300);
+                }
+            }
+
+            // 4. Standard Movement Animations
+            let startTime = Date.now();
+            const duration = 1200;
+
+            function runMovement() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                if (movement === 'jump') {
+                    mesh.position.y = mesh.userData.baseY + Math.sin(progress * Math.PI) * 0.6;
+                } else if (movement === 'spin') {
+                    mesh.rotation.y = progress * Math.PI * 2;
+                } else if (movement === 'walk') {
+                    mesh.position.x = mesh.userData.baseX + Math.sin(progress * Math.PI * 2) * 0.3;
+                    mesh.position.y = mesh.userData.baseY + Math.abs(Math.sin(progress * Math.PI * 4)) * 0.15;
+                } else if (movement === 'wave') {
+                    mesh.rotation.z = Math.sin(progress * Math.PI * 4) * 0.25;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(runMovement);
+                } else {
+                    // Reset position & scale gracefully
+                    mesh.position.x = mesh.userData.baseX;
+                    mesh.position.y = mesh.userData.baseY;
+                    mesh.rotation.set(0, 0, 0);
+                    mesh.scale.set(1, 1, 1);
+                    mesh.userData.isAnimating = false;
+                }
+            }
+
+            runMovement();
+        }
+
+        // Handle Window Resizing for 3D Canvas
+        window.addEventListener('resize', () => {
+            if (renderer && camera) {
+                const container = document.getElementById('canvas3d-container');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+    </script>
+</body>
+</html>
